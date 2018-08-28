@@ -9,19 +9,24 @@
 import Foundation
 import Metal
 
+// function name(input_param1 : data_type,input_param2: data_type ) -> (output_param1_dt output_param2_dt)
+
+// utility function to create array from the input data
 func getDataFromBlob(blob: NSDictionary) -> ([Float], [Float]) {
     print(" ==> getDataFromBlob")
     
-    let shape = blob["shape"] as! NSDictionary
-    let data = blob["data"] as! [Float]
-    var FloatData = createFloatNumbersArray(data.count)
-    for i in 0 ..< data.count {
+    let shape = blob["shape"] as! NSDictionary // dimensions of the input
+    let data = blob["data"] as! [Float] // get the input data
+	// create float array from the input
+    var FloatData = createFloatNumbersArray(data.count) // length of the array
+    for i in 0 ..< data.count { // create the array
         FloatData[i] = data[i]
     }
-    return (shape["dim"] as! [Float], FloatData)
+    return (shape["dim"] as! [Float], FloatData) // return dims and input
 }
 
 
+// utility function for convolution operations
 
 func createConvolutionLayerCached(layer: NSDictionary,
     inputBuffer: MTLBuffer,
@@ -40,24 +45,28 @@ func createConvolutionLayerCached(layer: NSDictionary,
         let metalCommandBuffer = metalCommandQueue.commandBufferWithUnretainedReferences()
         
         var convolution_params_dict:NSDictionary = NSDictionary()
-        var pad:Float = 0.0
-        var kernel_size:Float = 1.0
-        var stride:Float = 1.0
+        var pad:Float = 0.0 // default padding 
+        var kernel_size:Float = 1.0 // default filter size
+        var stride:Float = 1.0 // default stride
         var blobs:[NSDictionary] = []
-        var weights:[Float] = []
+        var weights:[Float] = [] // float array for weights
         var weight_shape:[Float] = []
-        var bias_data:[Float] = []
-        var h:Float = 0.0
-        var w:Float = 0.0
-        var result_shape:[Float] = []
+        var bias_data:[Float] = [] // float array for bias
+        var h:Float = 0.0 // height of input
+        var w:Float = 0.0 // width of input
+        var result_shape:[Float] = [] // output dimensions
         var outputCount:Int = 0
         
-        var input_dimensions:MetalTensorDimensions = MetalTensorDimensions(n: 0, channels: 0, width: 0, height:0)
+		// create metal tensors 
+        var input_dimensions:MetalTensorDimensions = MetalTensorDimensions(n: 0, channels: 0, width: 0, height:0) // w*h*d
         var weight_dimensions:MetalTensorDimensions = MetalTensorDimensions(n: 0, channels: 0, width: 0, height:0)
         var result_dimensions:MetalTensorDimensions = MetalTensorDimensions(n: 0, channels: 0, width: 0, height:0)
         var tensor_dimensions:[MetalTensorDimensions] = []
         var col_dimensions:MetalTensorDimensions = MetalTensorDimensions(n: 0, channels: 0, width: 0, height:0)
         var col_output:[Float] = []
+		
+		// assign convolution params
+		// todo: check why kernel_size is 0 here
         var convolution_params:MetalConvolutionParameters = MetalConvolutionParameters(pad:0, kernel_size: 0, stride: 0)
         
         
@@ -66,10 +75,13 @@ func createConvolutionLayerCached(layer: NSDictionary,
             pad = 0.0
             kernel_size = 1.0
             stride = 1.0
-            if let val = convolution_params_dict["pad"] as? Float {
+			
+			// as? --> data type
+			
+            if let val = convolution_params_dict["pad"] as? Float { // if padding has been provided use that val else default to 0
                 pad = val
             }
-            if let val = convolution_params_dict["kernel_size"] as? Float {
+            if let val = convolution_params_dict["kernel_size"] as? Float { //if filter_kernel_size has been provided use it else default to 1
                 kernel_size = val
             }
             
@@ -101,8 +113,8 @@ func createConvolutionLayerCached(layer: NSDictionary,
             print("### Time to blob: \(NSDate().timeIntervalSinceDate(startblob))")
 */
 
-            
-            h = (inputShape[2] + 2 * pad - kernel_size) / stride + 1
+            # calculate the output dimensions
+            h = (inputShape[2] + 2 * pad - kernel_size) / stride + 1 
             w = (inputShape[3] + 2 * pad - kernel_size) / stride + 1
             result_shape = [inputShape[0], weight_shape[0], h, w]
             outputCount = Int(result_shape.reduce(1, combine: *))
