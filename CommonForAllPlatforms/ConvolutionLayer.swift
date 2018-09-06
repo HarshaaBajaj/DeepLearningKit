@@ -126,7 +126,10 @@ func createConvolutionLayerCached(layer: NSDictionary,
             result_dimensions = MetalTensorDimensions(n: result_shape[0], channels: result_shape[1], width: result_shape[2], height: result_shape[3])
             tensor_dimensions = [input_dimensions, weight_dimensions, col_dimensions, result_dimensions]
             
-            
+            // createFloatNumbersArray 
+			array_len = int(input_shape[0]*h*w*weight_shape[0])
+			temp_output = [float](array_len, repeat 0.0)
+			
             col_output = createFloatNumbersArray(Int(col_dimensions.n * col_dimensions.channels * col_dimensions.height * col_dimensions.width))
             
             
